@@ -19,7 +19,7 @@ def extrair_texto_pdf(uploaded_file):
             texto_completo += texto_extraido + "\n"
     return texto_completo
 
-# Barra lateral para upload dos dados (agora suporta PDF)
+# Barra lateral para upload dos dados
 st.sidebar.header("📂 Importação de Dados")
 uploaded_med = st.sidebar.file_uploader("Upload: Medições (CSV, XLSX ou PDF)", type=["csv", "xlsx", "pdf"])
 uploaded_nfs = st.sidebar.file_uploader("Upload: Notas Fiscais (CSV, XLSX ou PDF)", type=["csv", "xlsx", "pdf"])
@@ -36,13 +36,13 @@ if uploaded_nfs and uploaded_nfs.name.endswith('.pdf'):
     texto_pdf_nfs = extrair_texto_pdf(uploaded_nfs)
     st.sidebar.success("PDF de NFs lido com sucesso!")
 
-# Dados Fictícios Exemplo (caso o utilizador não envie ficheiros estruturados)
+# Dados Fictícios Exemplo (com datas no formato dd/mm/aaaa)
 if not uploaded_med or not uploaded_nfs:
     st.info("💡 A carregar dados fictícios demonstrativos para visualização...")
     
     df_med = pd.DataFrame({
         "ID_Medicao": ["MED-001", "MED-002", "MED-003", "MED-004"],
-        "Periodo": ["2026-01", "2026-01", "2026-02", "2026-02"],
+        "Periodo": ["15/01/2026", "31/01/2026", "15/02/2026", "28/02/2026"],
         "Centro_de_Custo": ["CC-101 - Hospital", "CC-102 - Escola", "CC-101 - Hospital", "CC-103 - Pavimentação"],
         "Valor_Total": [150000.00, 85000.00, 210000.00, 120000.00]
     })
@@ -61,10 +61,9 @@ else:
     elif uploaded_med.name.endswith('.xlsx'):
         df_med = pd.read_excel(uploaded_med)
     else:
-        # Se for PDF, criamos uma tabela base para demonstração com base no texto extraído
         df_med = pd.DataFrame({
             "ID_Medicao": ["MED-PDF-01"],
-            "Periodo": ["2026-03"],
+            "Periodo": ["15/03/2026"],
             "Centro_de_Custo": ["CC-Geral - PDF"],
             "Valor_Total": [500000.00]
         })
@@ -83,6 +82,10 @@ else:
             "Valor_NF": [500000.00]
         })
 
+# Garantir a formatação dd/mm/aaaa na coluna Periodo
+if "Periodo" in df_med.columns:
+    df_med["Periodo"] = pd.to_datetime(df_med["Periodo"], errors="coerce", dayfirst=True).dt.strftime("%d/%m/%Y").fillna(df_med["Periodo"])
+
 # Criação das Abas da Aplicação
 tab1, tab2, tab3 = st.tabs([
     "📊 Resumo de Medições (Período & Centro de Custo)", 
@@ -98,7 +101,7 @@ with tab1:
     
     col1, col2 = st.columns(2)
     with col1:
-        periodo_sel = st.multiselect("Filtrar por Período:", options=df_med["Periodo"].unique(), default=df_med["Periodo"].unique())
+        periodo_sel = st.multiselect("Filtrar por Período (DD/MM/AAAA):", options=df_med["Periodo"].unique(), default=df_med["Periodo"].unique())
     with col2:
         cc_sel = st.multiselect("Filtrar por Centro de Custo:", options=df_med["Centro_de_Custo"].unique(), default=df_med["Centro_de_Custo"].unique())
 
@@ -109,7 +112,7 @@ with tab1:
     resumo_med = df_med_filtered.groupby(["Periodo", "Centro_de_Custo"])["Valor_Total"].sum().reset_index()
     st.dataframe(resumo_med, use_container_width=True)
 
-    fig_med = px.bar(resumo_med, x="Periodo", y="Valor_Total", color="Centro_de_Custo", barmode="group", title="Valores Medidos por Período e Centro de Custo")
+    fig_med = px.bar(resumo_med, x="Periodo", y="Valor_Total", color="Centro_de_Custo", barmode="group", title="Valores Medidos por Período (DD/MM/AAAA) e Centro de Custo")
     st.plotly_chart(fig_med, use_container_width=True)
 
 # ----------------------------------------------------
