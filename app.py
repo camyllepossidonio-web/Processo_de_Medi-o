@@ -25,7 +25,7 @@ def carregar_dados_iniciais():
         'Qtd_Acum_Anterior': [300.0, 150.0, 50.0]
     }
     
-    # Memória de Cálculo Atual (Período) com KM e Estacas
+    # Memória de Cálculo Atual (Período) com KM, Estacas e Data de Execução
     memoria_data = {
         'ID_Medicao': ['M-001', 'M-002', 'M-003'],
         'Cod_Servico': ['SERV-01', 'SERV-01', 'SERV-02'],
@@ -35,7 +35,7 @@ def carregar_dados_iniciais():
         'Estaca_Final': [248, 252, 265],
         'Fracao_Final': [5.0, 0.0, 10.0],
         'Qtd_Calculada': [150.0, 120.0, 85.0],
-        'Data_Medicao': ['2026-10-10', '2026-10-12', '2026-10-15']
+        'Data_Execucao': ['2026-10-10', '2026-10-12', '2026-10-15']
     }
     
     return pd.DataFrame(contrato_data), pd.DataFrame(memoria_data)
@@ -83,7 +83,7 @@ with tab1:
 # --- ABA 2: MEMÓRIA DE CÁLCULO ---
 with tab2:
     st.subheader("Memória de Cálculo de Campo (Alimentação por Localização Linear)")
-    st.write("Detalhamento geométrico e de estacamento que suporta os quantitativos medidos.")
+    st.write("Detalhamento geométrico, estacamento e data de execução que suporta os quantitativos medidos.")
     
     st.dataframe(df_memoria, use_container_width=True)
     
@@ -101,7 +101,7 @@ with tab2:
         with col3:
             frac_fin = st.number_input("Fração Final (m)", min_value=0.0, value=0.0, format="%.2f")
             qtd = st.number_input("Quantidade Calculada (Un/m³/m²)", min_value=0.0, value=50.0, format="%.2f")
-            data_med = st.date_input("Data da Medição")
+            data_exec = st.date_input("Data de Execução")
             
         btn_salvar = st.form_submit_button("Inserir na Memória")
         if btn_salvar:
@@ -129,4 +129,3 @@ with tab3:
         title="Comparativo de Valores Medidos por Serviço (Acumulado x Período)",
         labels={'value': 'Valor (R$)', 'Cod_Servico': 'Código do Serviço'}
     )
-    st.plotly_chart(fig, use_container_width=True)
