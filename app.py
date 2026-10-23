@@ -77,4 +77,13 @@ with tab2:
     with col_cc:
         cc_nf_sel = st.multiselect("Filtrar por Centro de Custo (NFs):", options=df_nfs["Centro_de_Custo"].unique(), default=df_nfs["Centro_de_Custo"].unique())
 
-    df_nfs_filtered = df_nfs[(df_nfs["Municipio"].isin(mun_sel)) & (df_nfs["Centro_de_Custo"].isin(cc_nf
+    df_nfs_filtered = df_nfs[(df_nfs["Municipio"].isin(mun_sel)) & (df_nfs["Centro_de_Custo"].isin(cc_nf_sel))]
+
+    # Exibição de Resumo Agrupado
+    st.markdown("### 📌 Resumo de NFs por Município e Centro de Custo")
+    resumo_nfs = df_nfs_filtered.groupby(["Municipio", "Centro_de_Custo"])["Valor_NF"].sum().reset_index()
+    st.dataframe(resumo_nfs, use_container_width=True)
+
+    # Detalhamento Tabela
+    st.markdown("### 📄 Lista Detalhada das Notas Fiscais")
+    st.dataframe(df_nfs_filtered, use_container_width=True)
