@@ -1,139 +1,172 @@
-import io
-import os
-import pandas as pd
-import pypdf
-import streamlit as st
-from openai import AzureOpenAI
+import openpyxl
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
 
-# 1. Configuração inicial da página (DEVE ser o primeiro comando Streamlit)
-st.set_page_config(
-    page_title="ChatBot RAG - Microsoft Foundry", page_icon="🤖", layout="centered"
-)
 
-# 2. CSS Customizado para Estilização e Borda Profissional
-st.markdown(
-    """
-    <style>
-        .stApp {
-            background-color: #f4f6f9;
-        }
-        [data-testid="stSidebar"] {
-            background-color: #ffffff;
-            border-right: 1px solid #e2e8f0;
-        }
-        h1 {
-            color: #1e293b;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-    </style>
-""",
-    unsafe_allow_html=True,
-)
+def criar_planilha_medicao(nome_arquivo="planilha_medicao.xlsx"):
+    # Inicializa o workbook e seleciona a aba ativa
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Medição"
 
-# 3. Configuração da API (Microsoft Foundry / Azure OpenAI)
-API_KEY = "6t2pTNsmNafDyo53MDAFIrvvQRBZXP7dLcr5j3TLxMS34LQVq3ZUJQQJ99CHACHYHv6XJ3w3AAAAACOGT7os"
-DEPLOYMENT_NAME = "gpt-4.1-mini"
-ENDPOINT = "https://marcelomaffeis-05082026-resource.services.ai.azure.com/"
+    # Habilitar exibição de linhas de grade
+    ws.views.sheetView[0].showGridLines = True
 
-# Inicialização segura do cliente
-client = None
-try:
-  client = AzureOpenAI(
-      api_key=API_KEY, api_version="2024-02-01", azure_endpoint=ENDPOINT
-  )
-except Exception as e:
-  st.error(f"Erro ao inicializar o cliente AzureOpenAI: {e}")
+    # Definição de estilos visuais (Paleta Azul Corporativo)
+    HEADER_FILL = PatternFill(
+        start_color="1F4E78", end_color="1F4E78", fill_type="solid"
+    )
+    HEADER_FONT = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+    TITLE_FONT = Font(name="Calibri", size=14, bold=True, color="1F4E78")
+    BOLD_FONT = Font(name="Calibri", size=11, bold=True)
+    REGULAR_FONT = Font(name="Calibri", size=11)
 
-# 4. Gerenciamento de Estado (Session State)
-if "document_text" not in st.session_state:
-  st.session_state.document_text = ""
-
-if "messages" not in st.session_state:
-  st.session_state.messages = []
-
-# Título da Aplicação
-st.title("🤖 ChatBot Inteligente com RAG")
-st.markdown(
-    "Faça upload de um documento (**Excel**, **PDF** ou **TXT**) na barra"
-    " lateral para utilizá-lo como contexto nas conversas."
-)
-
-# 5. Barra Lateral - Upload de Arquivos
-st.sidebar.header("📁 Base de Conhecimento")
-uploaded_file = st.sidebar.file_uploader(
-    "Envie seu arquivo", type=["xlsx", "xls", "pdf", "txt"]
-)
-
-if uploaded_file is not None:
-  file_extension = uploaded_file.name.split(".")[-1].lower()
-  try:
-    if file_extension == "txt":
-      st.session_state.document_text = uploaded_file.getvalue().decode("utf-8")
-      st.sidebar.success(f"TXT '{uploaded_file.name}' carregado!")
-
-    elif file_extension == "pdf":
-      pdf_reader = pypdf.PdfReader(io.BytesIO(uploaded_file.getvalue()))
-      extracted_text = ""
-      for page in pdf_reader.pages:
-        text = page.extract_text()
-        if text:
-          extracted_text += text + "\n"
-      st.session_state.document_text = extracted_text
-      st.sidebar.success(f"PDF '{uploaded_file.name}' carregado!")
-
-    elif file_extension in ["xlsx", "xls"]:
-      df = pd.read_excel(uploaded_file)
-      st.session_state.document_text = df.to_string(index=False)
-      st.sidebar.success(f"Excel '{uploaded_file.name}' carregado!")
-
-  except Exception as e:
-    st.sidebar.error(f"Erro ao processar o arquivo: {e}")
-    st.session_state.document_text = ""
-
-if st.session_state.document_text:
-  st.sidebar.info("📄 Contexto ativo pronto para consultas!")
-
-# 6. Interface de Chat
-for message in st.session_state.messages:
-  with st.chat_message(message["role"]):
-    st.markdown(message["content"])
-
-# Captura de Entrada do Usuário
-if prompt := st.chat_input("Digite sua mensagem ou pergunta sobre o arquivo..."):
-  st.session_state.messages.append({"role": "user", "content": prompt})
-  with st.chat_message("user"):
-    st.markdown(prompt)
-
-  # Montagem do Prompt RAG
-  system_prompt = (
-      "Você é um assistente virtual especialista e prestativo. Responda de"
-      " maneira clara e objetiva com base no contexto fornecido."
-  )
-
-  if st.session_state.document_text:
-    system_prompt += (
-        "\n\nContexto do documento/planilha:\n--- INÍCIO DO CONTEXTO"
-        f" ---\n{st.session_state.document_text}\n--- FIM DO CONTEXTO ---"
+    # Bordas
+    thin_border = Border(
+        left=Side(style="thin", color="D9D9D9"),
+        right=Side(style="thin", color="D9D9D9"),
+        top=Side(style="thin", color="D9D9D9"),
+        bottom=Side(style="thin", color="D9D9D9"),
+    )
+    total_border = Border(
+        top=Side(style="thin", color="000000"),
+        bottom=Side(style="double", color="000000"),
     )
 
-  messages_payload = [{"role": "system", "content": system_prompt}]
-  for m in st.session_state.messages:
-    messages_payload.append({"role": m["role"], "content": m["content"]})
+    # Cabeçalho do Projeto / Informações Gerais
+    ws["A1"] = "RELATÓRIO DE MEDIÇÃO DE OBRA / SERVIÇO"
+    ws["A1"].font = TITLE_FONT
+    ws.merge_cells("A1:I1")
 
-  # Chamada à API
-  with st.chat_message("assistant"):
-    with st.spinner("Analisando e gerando resposta..."):
-      if client is None:
-        st.error("Erro: Cliente da API não configurado.")
-      else:
-        try:
-          response = client.chat.completions.create(
-              model=DEPLOYMENT_NAME, messages=messages_payload, temperature=0.7
-          )
-          bot_response = response.choices[0].message.content
-          st.markdown(bot_response)
-          st.session_state.messages.append(
-              {"role": "assistant", "content": bot_response}
-          )
-        except Exception as e:
-          st.error(f"Erro na comunicação com a API: {e}")
+    ws["A3"] = "Contratante:"
+    ws["B3"] = "Nome do Cliente S.A."
+    ws["A4"] = "Contratada:"
+    ws["B4"] = "Nome da Empresa Executante"
+    ws["A5"] = "Medição Nº:"
+    ws["B5"] = 1
+
+    for row in range(3, 6):
+        ws[f"A{row}"].font = BOLD_FONT
+        ws[f"B{row}"].font = REGULAR_FONT
+
+    # Cabeçalhos da Tabela de Medição
+    headers = [
+        "Item",
+        "Descrição dos Serviços",
+        "Unidade",
+        "Qtd. Contrato",
+        "Vlr. Unitário (R$)",
+        "Vlr. Total Contrato (R$)",
+        "Medido Anterior",
+        "Medido Atual",
+        "Total Medido",
+    ]
+
+    header_row = 7
+    for col_num, header_title in enumerate(headers, 1):
+        cell = ws.cell(row=header_row, column=col_num, value=header_title)
+        cell.fill = HEADER_FILL
+        cell.font = HEADER_FONT
+        cell.alignment = Alignment(
+            horizontal="center", vertical="center", wrap_text=True
+        )
+        cell.border = thin_border
+    ws.row_dimensions[header_row].height = 30
+
+    # Dados de Exemplo (Itens da Medição)
+    # Formato: (Item, Descrição, Unidade, Qtd Contrato, Vlr Unitário, Medido Anterior, Medido Atual)
+    dados = [
+        (
+            "1.0",
+            "Serviços Preliminares e Mobilização",
+            "VB",
+            1.0,
+            15000.00,
+            0.0,
+            1.0,
+        ),
+        ("2.0", "Locação da Obra", "m²", 500.0, 15.00, 200.0, 300.0),
+        ("3.0", "Escavação Manual de Valas", "m³", 120.0, 85.50, 50.0, 70.0),
+        ("4.0", "Concretagem de Fundações (Fck 25MPa)", "m³", 45.0, 650.00, 10.0, 25.0),
+    ]
+
+    start_row = 8
+    for i, row_data in enumerate(dados):
+        current_row = start_row + i
+        item, desc, unidade, qtd_contrato, vlr_unit, med_ant, med_atual = row_data
+
+        # Inserção de valores estáticos
+        ws.cell(row=current_row, column=1, value=item).alignment = Alignment(
+            horizontal="center"
+        )
+        ws.cell(row=current_row, column=2, value=desc).alignment = Alignment(
+            horizontal="left"
+        )
+        ws.cell(row=current_row, column=3, value=unidade).alignment = Alignment(
+            horizontal="center"
+        )
+
+        c_qtd = ws.cell(row=current_row, column=4, value=qtd_contrato)
+        c_qtd.number_format = "#,##0.00"
+
+        c_vlr = ws.cell(row=current_row, column=5, value=vlr_unit)
+        c_vlr.number_format = "R$ #,##0.00"
+
+        # Fórmulas Excel: Vlr Total Contrato = Qtd Contrato * Vlr Unitário
+        c_vlr_tot = ws.cell(
+            row=current_row, column=6, value=f"=D{current_row}*E{current_row}"
+        )
+        c_vlr_tot.number_format = "R$ #,##0.00"
+
+        c_med_ant = ws.cell(row=current_row, column=7, value=med_ant)
+        c_med_ant.number_format = "#,##0.00"
+
+        c_med_atu = ws.cell(row=current_row, column=8, value=med_atual)
+        c_med_atu.number_format = "#,##0.00"
+
+        # Fórmulas Excel: Total Medido = Medido Anterior + Medido Atual
+        c_tot_med = ws.cell(
+            row=current_row, column=9, value=f"=G{current_row}+H{current_row}"
+        )
+        c_tot_med.number_format = "#,##0.00"
+
+        # Aplicar fontes e bordas em toda a linha
+        for col_num in range(1, 10):
+            cell = ws.cell(row=current_row, column=col_num)
+            cell.font = REGULAR_FONT
+            cell.border = thin_border
+
+    # Linha de Total Geral
+    last_data_row = start_row + len(dados) - 1
+    total_row = last_data_row + 2
+
+    ws.cell(row=total_row, column=2, value="TOTAL GERAL").font = BOLD_FONT
+    ws.cell(row=total_row, column=2).alignment = Alignment(horizontal="right")
+
+    c_tot_contrato = ws.cell(
+        row=total_row, column=6, value=f"=SUM(F{start_row}:F{last_data_row})"
+    )
+    c_tot_contrato.font = BOLD_FONT
+    c_tot_contrato.number_format = "R$ #,##0.00"
+    c_tot_contrato.border = total_border
+
+    # Ajuste automático inteligente da largura das colunas
+    for col in ws.columns:
+        max_len = 0
+        col_letter = get_column_letter(col[0].column)
+        for cell in col:
+            if cell.row < 7:  # Ignorar cabeçalho do projeto no cálculo de largura
+                continue
+            if cell.value:
+                val_str = str(cell.value)
+                if len(val_str) > max_len:
+                    max_len = len(val_str)
+        ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
+
+    # Salva o arquivo gerado
+    wb.save(nome_arquivo)
+    print(f"Planilha de medição gerada com sucesso: '{nome_arquivo}'")
+
+
+if __name__ == "__main__":
+    criar_planilha_medicao()
