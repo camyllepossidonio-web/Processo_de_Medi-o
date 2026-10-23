@@ -25,10 +25,11 @@ def carregar_dados_iniciais():
         'Qtd_Acum_Anterior': [300.0, 150.0, 50.0]
     }
     
-    # Memória de Cálculo Atual (Período) com KM, Estacas e Data de Execução
+    # Memória de Cálculo Atual (Período) com Local de Serviço, KM, Estacas e Data de Execução
     memoria_data = {
         'ID_Medicao': ['M-001', 'M-002', 'M-003'],
         'Cod_Servico': ['SERV-01', 'SERV-01', 'SERV-02'],
+        'Local_Servico': ['Corte de Talude - Pista Esquerda', 'Alargamento de Plataforma', 'Bueiro BL-01'],
         'KM': ['KM 12+200', 'KM 12+400', 'KM 13+000'],
         'Estaca_Inicial': [244, 248, 260],
         'Fracao_Inicial': [0.0, 5.0, 0.0],
@@ -83,7 +84,7 @@ with tab1:
 # --- ABA 2: MEMÓRIA DE CÁLCULO ---
 with tab2:
     st.subheader("Memória de Cálculo de Campo (Alimentação por Localização Linear)")
-    st.write("Detalhamento geométrico, estacamento e data de execução que suporta os quantitativos medidos.")
+    st.write("Detalhamento geométrico, local do serviço, estacamento e data de execução que suporta os quantitativos medidos.")
     
     st.dataframe(df_memoria, use_container_width=True)
     
@@ -93,14 +94,15 @@ with tab2:
         col1, col2, col3 = st.columns(3)
         with col1:
             cod_serv = st.selectbox("Selecione o Serviço", df_contrato['Cod_Servico'] + " - " + df_contrato['Descricao_Servico'])
-            km = st.text_input("KM", "KM 12+500")
+            local_servico = st.text_input("Local de Serviço", "Ex: Pista Direita - Trecho A")
         with col2:
+            km = st.text_input("KM", "KM 12+500")
             est_ini = st.number_input("Estaca Inicial", min_value=0, value=250, step=1)
             frac_ini = st.number_input("Fração Inicial (m)", min_value=0.0, value=0.0, format="%.2f")
-            est_fin = st.number_input("Estaca Final", min_value=0, value=255, step=1)
         with col3:
+            est_fin = st.number_input("Estaca Final", min_value=0, value=255, step=1)
             frac_fin = st.number_input("Fração Final (m)", min_value=0.0, value=0.0, format="%.2f")
-            qtd = st.number_input("Quantidade Calculada (Un/m³/m²)", min_value=0.0, value=50.0, format="%.2f")
+            qtd = st.number_input("Quantidade Calculada", min_value=0.0, value=50.0, format="%.2f")
             data_exec = st.date_input("Data de Execução")
             
         btn_salvar = st.form_submit_button("Inserir na Memória")
@@ -129,3 +131,4 @@ with tab3:
         title="Comparativo de Valores Medidos por Serviço (Acumulado x Período)",
         labels={'value': 'Valor (R$)', 'Cod_Servico': 'Código do Serviço'}
     )
+    st.plotly_chart(fig, use_container_width=True)
