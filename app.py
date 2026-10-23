@@ -5,7 +5,7 @@ import plotly.express as px
 st.set_page_config(page_title="Sala Técnica - Medição de Obras", layout="wide")
 
 st.title("🏗️ Gestão de Medições e Memória de Cálculo - Sala Técnica")
-st.caption("Protótipo Educacional (PoC) para acompanhamento e cálculo acumulado de serviços em obras.")
+st.caption("Protótipo Educacional (PoC) para acompanhamento e cálculo acumulado de serviços em obras lineares.")
 
 # --- DATAFRAMES FICTÍCIOS (Simulação de Dados) ---
 @st.cache_data
@@ -15,24 +15,26 @@ def carregar_dados_iniciais():
         'Item': ['1.1', '2.1', '3.1'],
         'Cod_Servico': ['SERV-01', 'SERV-02', 'SERV-03'],
         'Descricao_Servico': [
-            'Concretagem de Estacas fck 30MPa',
-            'Alvenaria de Vedação bloco cerâmico 14cm',
-            'Revestimento Cerâmico de Piso'
+            'Escavação de Solo - 1ª Categoria',
+            'Camada de Base de Brita Graduada',
+            'Concretagem de OAE (Bueiros)'
         ],
-        'Unid': ['m³', 'm²', 'm²'],
-        'Qtd_Contratada': [100.0, 500.0, 350.0],
-        'Preco_Unit': [450.00, 85.00, 110.00],
-        'Qtd_Acum_Anterior': [20.0, 150.0, 0.0]
+        'Unid': ['m³', 'm³', 'm³'],
+        'Qtd_Contratada': [1500.0, 800.0, 250.0],
+        'Preco_Unit': [25.00, 110.00, 450.00],
+        'Qtd_Acum_Anterior': [300.0, 150.0, 50.0]
     }
     
-    # Memória de Cálculo Atual (Período)
+    # Memória de Cálculo Atual (Período) com KM e Estacas
     memoria_data = {
         'ID_Medicao': ['M-001', 'M-002', 'M-003'],
-        'Cod_Servico': ['SERV-01', 'SERV-02', 'SERV-02'],
-        'Local_Pavimento': ['Bloco A - Fundação', '1º Pavimento', '2º Pavimento'],
-        'Comprimento': [0.0, 12.50, 10.00],
-        'Largura': [0.0, 2.80, 2.80],
-        'Qtd_Calculada': [45.00, 35.00, 28.00],
+        'Cod_Servico': ['SERV-01', 'SERV-01', 'SERV-02'],
+        'KM': ['KM 12+200', 'KM 12+400', 'KM 13+000'],
+        'Estaca_Inicial': [244, 248, 260],
+        'Fracao_Inicial': [0.0, 5.0, 0.0],
+        'Estaca_Final': [248, 252, 265],
+        'Fracao_Final': [5.0, 0.0, 10.0],
+        'Qtd_Calculada': [150.0, 120.0, 85.0],
         'Data_Medicao': ['2026-10-10', '2026-10-12', '2026-10-15']
     }
     
@@ -80,8 +82,8 @@ with tab1:
 
 # --- ABA 2: MEMÓRIA DE CÁLCULO ---
 with tab2:
-    st.subheader("Memória de Cálculo de Campo (Alimentação por Linha)")
-    st.write("Esta aba contém o detalhamento geométrico/físico que suporta os valores medidos.")
+    st.subheader("Memória de Cálculo de Campo (Alimentação por Localização Linear)")
+    st.write("Detalhamento geométrico e de estacamento que suporta os quantitativos medidos.")
     
     st.dataframe(df_memoria, use_container_width=True)
     
@@ -91,17 +93,19 @@ with tab2:
         col1, col2, col3 = st.columns(3)
         with col1:
             cod_serv = st.selectbox("Selecione o Serviço", df_contrato['Cod_Servico'] + " - " + df_contrato['Descricao_Servico'])
-            local = st.text_input("Local / Pavimento", "3º Pavimento")
+            km = st.text_input("KM", "KM 12+500")
         with col2:
-            comp = st.number_input("Comprimento (m)", min_value=0.0, value=0.0)
-            larg = st.number_input("Largura (m)", min_value=0.0, value=0.0)
+            est_ini = st.number_input("Estaca Inicial", min_value=0, value=250, step=1)
+            frac_ini = st.number_input("Fração Inicial (m)", min_value=0.0, value=0.0, format="%.2f")
+            est_fin = st.number_input("Estaca Final", min_value=0, value=255, step=1)
         with col3:
-            qtd = st.number_input("Quantidade Total Direta", min_value=0.0, value=10.0)
+            frac_fin = st.number_input("Fração Final (m)", min_value=0.0, value=0.0, format="%.2f")
+            qtd = st.number_input("Quantidade Calculada (Un/m³/m²)", min_value=0.0, value=50.0, format="%.2f")
             data_med = st.date_input("Data da Medição")
             
         btn_salvar = st.form_submit_button("Inserir na Memória")
         if btn_salvar:
-            st.success("Nova medição adicionada com sucesso! (Modo Simulação)")
+            st.success("Nova medição por estacamento adicionada com sucesso! (Modo Simulação)")
 
 # --- ABA 3: DASHBOARDS ---
 with tab3:
